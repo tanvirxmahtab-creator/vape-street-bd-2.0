@@ -1,0 +1,19 @@
+# Dev / planning docs — not needed on server or in source control
+vape-street-bd-prd.md
+README.md
+
+# Deployment ZIPs — keep repo clean
+*.zip
+
+# Firebase backend rules (deployed separately via Firebase CLI, not web server)
+firestore.rules
+storage.rules
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/

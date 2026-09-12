@@ -1,0 +1,16 @@
+{
+  "name": "Vape Street BD",
+  "short_name": "Vape Street BD",
+  "description": "Curated adult vaping products in Bangladesh.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#090706",
+  "theme_color": "#090706",
+  "icons": [
+    {
+      "src": "assets/vape-street-bd-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
