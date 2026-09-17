@@ -18,6 +18,16 @@ export const AGE_GATE_COPY = {
   exitLabel: "Leave site"
 };
 
+export const OFFER_CAMPAIGN_COPY = {
+  active: true,
+  badge: "LIMITED TIME OFFER",
+  title: "Bar Juices Special Offer!",
+  headline: "Buy Any 2 Bar Juices for ৳1,400 Each!",
+  message: "Upgrade your vape flavors today. Get any 2 Bar Juices for just ৳1,400 each for a limited time at Vape Street BD.",
+  ctaText: "Order on WhatsApp",
+  ctaLinkMessage: "Hi Vape Street BD! I want to take advantage of the Bar Juices offer (৳1,400 each when buying 2)."
+};
+
 export const CATEGORIES = ["All", "Disposables", "Pod Systems & Kits", "E-Liquids", "Mods & Tanks", "Coils & Accessories"];
 export const DEMO_PRODUCTS = [
   {id:"kiligbar-6000",name:"Kiligbar 6000",category:"Disposables",price:1200,shortSpec:"Up to 6,000 puffs | Prefilled",description:"A compact Kiligbar prefilled device with a replaceable cartridge format, battery display, and draw-activated use. Availability and flavour selection change regularly.",variants:["Blackcurrant Lychee", "Mango Orange", "Blueberry Raspberry Lemon"],stock:"In Stock",featured:true,images:["https://vapeshopsky.com/storage/photos/1/Products/KILIGBAR%206K%20Puff%20Tobacco%20Disposal%20Kit.jpeg"]},
