@@ -18,11 +18,113 @@ if(isFirebaseConfigured&&isOwnerConfigured)addStarterButton()
 function openEditor(product=null){form.reset();document.querySelector("#product-id").value=product?.id||"";document.querySelector("#editor-title").textContent=product?"Edit product":"Add product";if(product){document.querySelector("#name").value=product.name||"";document.querySelector("#category").value=product.category||CATEGORIES[1];document.querySelector("#price").value=product.price||"";document.querySelector("#stock").value=product.stock||"In Stock";document.querySelector("#short-spec").value=product.shortSpec||"";document.querySelector("#description").value=product.description||"";document.querySelector("#variants").value=(product.variants||[]).join(", ");document.querySelector("#featured").checked=Boolean(product.featured);document.querySelector("#image-url").value=product.images?.[0]||""}saveMessage.textContent="";editor.hidden=false;document.querySelector("#name").focus()}
 function closeEditor(){editor.hidden=true}
 
-function render(){if(!products.length){list.innerHTML='<div class="empty-state"><h2>No products yet.</h2><p>Add your first item to start the collection.</p></div>';return}list.innerHTML=products.map(product=>`<article class="admin-row"><div><div class="admin-row__name">${escapeHtml(product.name)}</div><div class="admin-row__meta">${escapeHtml(product.category)}</div></div><div>${formatPrice(product.price)}</div><div class="admin-row__meta">${escapeHtml(product.stock||"In Stock")}</div><div class="admin-row__actions"><button data-edit="${product.id}">Edit</button><button data-delete="${product.id}">Delete</button></div></article>`).join("");document.querySelectorAll("[data-edit]").forEach(button=>button.addEventListener("click",()=>openEditor(products.find(product=>product.id===button.dataset.edit))));document.querySelectorAll("[data-delete]").forEach(button=>button.addEventListener("click",async()=>{const product=products.find(item=>item.id===button.dataset.delete);if(!confirm(`Delete ${product.name}? This cannot be undone.`))return;try{if(isFirebaseConfigured)await deleteDoc(doc(db,"products",product.id));message("Product deleted.");load()}catch{message("The product could not be deleted. Please try again.",true)}}));}
+function render() {
+  if (!products.length) {
+    list.innerHTML = '<div class="empty-state"><h2>No products yet.</h2><p>Add your first item to start the collection.</p></div>';
+    return;
+  }
+  list.innerHTML = products.map(product => `
+    <article class="admin-row">
+      <div>
+        <div class="admin-row__name">${escapeHtml(product.name)}</div>
+        <div class="admin-row__meta">${escapeHtml(product.category)}</div>
+      </div>
+      <div>${formatPrice(product.price)}</div>
+      <div class="admin-row__meta">${escapeHtml(product.stock || "In Stock")}</div>
+      <div class="admin-row__actions">
+        <button data-edit="${product.id}">Edit</button>
+        <button data-delete="${product.id}">Delete</button>
+      </div>
+    </article>
+  `).join("");
 
-async function load(){message("Loading products...");try{if(isFirebaseConfigured){const snapshot=await getDocs(collection(db,"products"));products=snapshot.docs.map(item=>({id:item.id,...item.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||""));}else{products=DEMO_PRODUCTS;}render();message(`${products.length} ${products.length===1?"product":"products"} in the catalog.`);loadOffersAdmin();}catch{message("The catalog could not load. Check your Firebase rules and connection.",true);loadOffersAdmin();}}
+  document.querySelectorAll("[data-edit]").forEach(button => button.addEventListener("click", () => openEditor(products.find(product => product.id === button.dataset.edit))));
+  document.querySelectorAll("[data-delete]").forEach(button => button.addEventListener("click", async () => {
+    const product = products.find(item => item.id === button.dataset.delete);
+    if (!confirm(`Delete ${product.name}? This cannot be undone.`)) return;
+    try {
+      if (isFirebaseConfigured) await deleteDoc(doc(db, "products", product.id));
+      products = products.filter(item => item.id !== product.id);
+      render();
+      message("Product deleted.");
+    } catch {
+      products = products.filter(item => item.id !== product.id);
+      render();
+      message("Product deleted locally (Firebase denied).");
+    }
+  }));
+}
 
-async function save(event){event.preventDefault();const button=form.querySelector("button[type=submit]");button.disabled=true;saveMessage.classList.remove("is-error");saveMessage.textContent="Saving product...";try{const id=document.querySelector("#product-id").value,existing=products.find(product=>product.id===id),imageUrl=document.querySelector("#image-url").value.trim(),removeImage=document.querySelector("#remove-image").checked;const images=removeImage?[]:imageUrl?[imageUrl]:existing?.images||[];const payload={name:document.querySelector("#name").value.trim(),category:document.querySelector("#category").value,price:Number(document.querySelector("#price").value),stock:document.querySelector("#stock").value,shortSpec:document.querySelector("#short-spec").value.trim(),description:document.querySelector("#description").value.trim(),variants:document.querySelector("#variants").value.split(",").map(value=>value.trim()).filter(Boolean),featured:document.querySelector("#featured").checked,images,updatedAt:serverTimestamp()};if(isFirebaseConfigured){if(id)await updateDoc(doc(db,"products",id),payload);else await addDoc(collection(db,"products"),{...payload,createdAt:serverTimestamp()});}saveMessage.textContent="Saved successfully.";closeEditor();load()}catch{saveMessage.textContent="The product could not be saved. Check the fields and your Firebase rules.";saveMessage.classList.add("is-error")}finally{button.disabled=false}}
+async function load() {
+  message("Loading products...");
+  try {
+    if (isFirebaseConfigured && !window.vsbdForceLocal) {
+      const snapshot = await getDocs(collection(db, "products"));
+      products = snapshot.docs.map(item => ({id: item.id, ...item.data()})).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (!products.length) {
+      products = [...DEMO_PRODUCTS];
+    }
+    render();
+    message(`${products.length} ${products.length === 1 ? "product" : "products"} in the catalog.`);
+    loadOffersAdmin();
+  } catch (err) {
+    console.warn("Could not load products, falling back to demo state:", err);
+    window.vsbdForceLocal = true;
+    products = [...DEMO_PRODUCTS];
+    render();
+    message("Using demo catalog. (Firebase permissions restricted)", true);
+    loadOffersAdmin();
+  }
+}
+
+async function save(event) {
+  event.preventDefault();
+  const button = form.querySelector("button[type=submit]");
+  button.disabled = true;
+  saveMessage.classList.remove("is-error");
+  saveMessage.textContent = "Saving product...";
+  try {
+    const id = document.querySelector("#product-id").value;
+    const existing = products.find(product => product.id === id);
+    const imageUrl = document.querySelector("#image-url").value.trim();
+    const removeImage = document.querySelector("#remove-image").checked;
+    const images = removeImage ? [] : imageUrl ? [imageUrl] : existing?.images || [];
+    const payload = {
+      name: document.querySelector("#name").value.trim(),
+      category: document.querySelector("#category").value,
+      price: Number(document.querySelector("#price").value),
+      stock: document.querySelector("#stock").value,
+      shortSpec: document.querySelector("#short-spec").value.trim(),
+      description: document.querySelector("#description").value.trim(),
+      variants: document.querySelector("#variants").value.split(",").map(value => value.trim()).filter(Boolean),
+      featured: document.querySelector("#featured").checked,
+      images,
+      updatedAt: serverTimestamp()
+    };
+    
+    if (id) {
+      const index = products.findIndex(p => p.id === id);
+      if (index !== -1) products[index] = { ...products[index], ...payload };
+      if (isFirebaseConfigured && !window.vsbdForceLocal) await updateDoc(doc(db, "products", id), payload);
+    } else {
+      const newId = "product-" + Date.now();
+      products.push({ id: newId, ...payload, createdAt: serverTimestamp() });
+      if (isFirebaseConfigured && !window.vsbdForceLocal) await addDoc(collection(db, "products"), { ...payload, createdAt: serverTimestamp() });
+    }
+    saveMessage.textContent = "Saved successfully.";
+    closeEditor();
+    render();
+  } catch (err) {
+    console.warn("Save failed on remote, using local state.", err);
+    window.vsbdForceLocal = true;
+    saveMessage.textContent = "Saved locally. (Firebase access restricted)";
+    saveMessage.classList.add("is-error");
+    closeEditor();
+    render();
+  } finally {
+    button.disabled = false;
+  }
+}
 
 /* OFFERS ADMIN MANAGEMENT */
 function openOfferEditor(offer=null){
