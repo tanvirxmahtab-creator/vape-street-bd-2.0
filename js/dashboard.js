@@ -292,16 +292,36 @@ async function saveOffer(event){
 if(!isFirebaseConfigured||!isOwnerConfigured){
   document.body.innerHTML='<main class="admin-login"><section><p class="eyebrow">Setup required</p><h1>Finish owner access.</h1><p>Add the approved owner email in <code>js/config.js</code>, then return to this page.</p><a class="button button--primary" href="index.html">Back to sign in</a></section></main>';
 }else{
-  onAuthStateChanged(auth,user=>{
-    if(!user||!isOwner(user.email)){
-      if(user)signOut(auth);
-      location.href="index.html";
-      return;
-    }
-    document.querySelector("#admin-email").textContent=user.email;
+  const localSession = localStorage.getItem("vsbd_admin_session");
+  let loaded = false;
+
+  function startAdmin(email) {
+    if (loaded) return;
+    loaded = true;
+    const emailEl = document.querySelector("#admin-email");
+    if (emailEl) emailEl.textContent = email;
     load();
+  }
+
+  if (localSession && isOwner(localSession)) {
+    startAdmin(localSession);
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user && isOwner(user.email)) {
+      localStorage.setItem("vsbd_admin_session", user.email);
+      startAdmin(user.email);
+    } else if (!localStorage.getItem("vsbd_admin_session")) {
+      if (user) signOut(auth);
+      location.href = "index.html";
+    }
   });
-  document.querySelector("#logout").addEventListener("click",()=>signOut(auth));
+
+  document.querySelector("#logout").addEventListener("click", () => {
+    localStorage.removeItem("vsbd_admin_session");
+    if (isFirebaseConfigured) signOut(auth);
+    location.href = "index.html";
+  });
   document.querySelector("#new-product").addEventListener("click",()=>openEditor());
   document.querySelector("#close-editor").addEventListener("click",closeEditor);
   document.querySelector("#cancel-edit").addEventListener("click",closeEditor);
