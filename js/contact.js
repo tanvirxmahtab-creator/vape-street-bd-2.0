@@ -39,6 +39,10 @@ function setupBranchFinder() {
 async function setupVapeScene() {
   const canvas = document.querySelector("#contact-vape-canvas"), section = document.querySelector(".visit-hero");
   if (!canvas || !section || !window.WebGLRenderingContext) return;
+  if (window.IS_LOW_END_DEVICE || document.documentElement?.classList.contains("low-power-mode")) {
+    canvas.style.display = "none";
+    return;
+  }
   try {
     const THREE = await import("https://unpkg.com/three@0.168.0/build/three.module.js");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

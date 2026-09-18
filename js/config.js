@@ -19,7 +19,7 @@ export const AGE_GATE_COPY = {
 };
 
 export const OFFER_CAMPAIGN_COPY = {
-  active: true,
+  active: false,
   badge: "LIMITED TIME OFFER",
   title: "Bar Juices Special Offer!",
   headline: "Buy Any 2 Bar Juices for ৳1,400 Each!",
@@ -27,6 +27,22 @@ export const OFFER_CAMPAIGN_COPY = {
   ctaText: "Order on WhatsApp",
   ctaLinkMessage: "Hi Vape Street BD! I want to take advantage of the Bar Juices offer (৳1,400 each when buying 2)."
 };
+
+export const DEFAULT_OFFERS = [
+  {
+    id: "bar-juices-30ml-1400",
+    active: true,
+    badge: "LIMITED TIME OFFER",
+    title: "30ml Bar Juices Special Deal",
+    headline: "30ml Bar Juices Special Price at ৳1,400!",
+    description: "Upgrade your flavor collection today. We are offering authentic 30ml Bar Juices at just ৳1,400 for a limited time at Vape Street BD.",
+    price: 1400,
+    imageUrl: "https://res.cloudinary.com/dfv8fqivk/image/upload/v1789755367/Bar_juice_bottles_displayed_on_2K_20260919001412_oisekj.jpg",
+    ctaText: "Claim Offer on WhatsApp",
+    ctaMessage: "Hi Vape Street BD! I want to take advantage of the 30ml Bar Juices offer at ৳1,400."
+  }
+];
+
 
 export const CATEGORIES = ["All", "Disposables", "Pod Systems & Kits", "E-Liquids", "Mods & Tanks", "Coils & Accessories"];
 export const DEMO_PRODUCTS = [
