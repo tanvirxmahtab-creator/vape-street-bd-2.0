@@ -85,6 +85,7 @@ function heroVideo() {
   // Ensure video is muted (required for autoplay in all browsers)
   video.muted = true;
   video.volume = 0;
+  video.loop = false;
 
   let hasPlayed = false;
 
