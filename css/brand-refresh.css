@@ -403,9 +403,7 @@ html{color-scheme:dark}body{touch-action:manipulation;-webkit-tap-highlight-colo
   pointer-events: none;
 }
 .hero--video:has(.hero__video.is-poster-only) {
-  background-image: url("https://res.cloudinary.com/dfv8fqivk/image/upload/v1789755367/Bar_juice_bottles_displayed_on_2K_20260919001412_oisekj.jpg");
-  background-size: cover;
-  background-position: center;
+  background: #050607;
 }
 
 
