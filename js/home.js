@@ -1,5 +1,5 @@
-import { DEMO_PRODUCTS, TESTIMONIALS, SITE_CONFIG, formatPrice, orderLink } from "./config.js?v=20261002";
-import { loadProducts, loadOffers, productVisual, escapeHtml, optimizeImageUrl } from "./app.js?v=20261002";
+import { DEMO_PRODUCTS, TESTIMONIALS, SITE_CONFIG, formatPrice, orderLink } from "./config.js?v=20260920";
+import { loadProducts, loadOffers, productVisual, escapeHtml, optimizeImageUrl } from "./app.js?v=20260920";
 function card(product) { const spec=product.shortSpec || product.variants?.[0] || "Selected edition"; return `<article class="product-card tilt-card"><a class="product-card__visual" href="product.html?id=${encodeURIComponent(product.id)}">${productVisual(product)}</a><div class="product-card__body"><div class="product-card__topline"><span>${escapeHtml(product.category)}</span><span class="stock--${product.stock === "Low Stock" ? "low" : product.stock === "Out of Stock" ? "out" : ""}">${escapeHtml(product.stock || "In Stock")}</span></div><h3>${escapeHtml(product.name)}</h3><p class="product-card__spec">${escapeHtml(spec)}</p><div class="product-card__bottom"><span class="price">${formatPrice(product.price)}</span><div class="card-actions"><a href="product.html?id=${encodeURIComponent(product.id)}">View</a><a href="${orderLink(product.name)}" target="_blank" rel="noopener">Order</a></div></div></div></article>`; }
 
 async function renderCurrentOffers() {

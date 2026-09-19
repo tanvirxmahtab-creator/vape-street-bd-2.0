@@ -1,5 +1,5 @@
-import { CATEGORIES, DEMO_PRODUCTS, formatPrice, orderLink } from "./config.js?v=20260930";
-import { loadProducts, productVisual, escapeHtml } from "./app.js?v=20260932";
+import { CATEGORIES, DEMO_PRODUCTS, formatPrice, orderLink } from "./config.js?v=20260920";
+import { loadProducts, productVisual, escapeHtml } from "./app.js?v=20260920";
 let allProducts=[], activeCategory=new URLSearchParams(location.search).get("category")||"All", searchTerm="";
 const target=document.querySelector("#catalog-products"), status=document.querySelector("#catalog-status");
 function card(product){const spec=product.shortSpec||product.variants?.[0]||"Selected edition";const out=product.stock==="Out of Stock";return `<article class="product-card"><a class="product-card__visual" href="product.html?id=${encodeURIComponent(product.id)}">${productVisual(product)}</a><div class="product-card__body"><div class="product-card__topline"><span>${escapeHtml(product.category)}</span><span class="stock--${product.stock === "Low Stock" ? "low" : out ? "out" : ""}">${escapeHtml(product.stock||"In Stock")}</span></div><h3>${escapeHtml(product.name)}</h3><p class="product-card__spec">${escapeHtml(spec)}</p><div class="product-card__bottom"><span class="price">${formatPrice(product.price)}</span><div class="card-actions"><a href="product.html?id=${encodeURIComponent(product.id)}">View</a>${out?"":`<a href="${orderLink(product.name)}" target="_blank" rel="noopener">Order</a>`}</div></div></div></article>`}
