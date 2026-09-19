@@ -396,6 +396,19 @@ html{color-scheme:dark}body{touch-action:manipulation;-webkit-tap-highlight-colo
   display: none !important;
 }
 
+/* Hero video fallback: when autoplay is blocked or unsupported,
+   show the poster image gracefully as a static background */
+.hero__video.is-poster-only {
+  opacity: 0;
+  pointer-events: none;
+}
+.hero--video:has(.hero__video.is-poster-only) {
+  background-image: url("https://res.cloudinary.com/dfv8fqivk/image/upload/v1789755367/Bar_juice_bottles_displayed_on_2K_20260919001412_oisekj.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+
 .low-power-mode .brand-ticker__track,
 .low-power-mode .art-ring,
 .low-power-mode .art-device,

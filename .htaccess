@@ -17,6 +17,9 @@ ErrorDocument 404 /404.html
   RewriteRule ^(.*)$ $1.html [L,QSA]
 </IfModule>
 
+# =====================================================================
+# SECURITY HEADERS
+# =====================================================================
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -25,14 +28,77 @@ ErrorDocument 404 /404.html
   Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 </IfModule>
 
+# =====================================================================
+# CACHE STRATEGY — Prevents users from seeing stale/old versions
+# =====================================================================
+# RULE: HTML pages are NEVER cached. Every visit fetches fresh HTML.
+#       CSS/JS/assets are cached long-term BUT with must-revalidate,
+#       so bumping the ?v=YYYYMMDD query string in HTML forces browsers
+#       to immediately download the new file on the next visit.
+#
+# HOW TO DEPLOY UPDATES:
+#   1. Make your changes to CSS / JS files.
+#   2. Find every <link> and <script> tag across all .html files.
+#   3. Change the ?v= number to today's date, e.g. ?v=20261001
+#   4. Upload updated files to Hostinger.
+#   Result: All users instantly get the new version. Zero stale cache.
+# =====================================================================
+
+<IfModule mod_headers.c>
+  # HTML — never cache, always revalidate
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # CSS & JavaScript — cache 1 year, but must-revalidate means ?v= busting works
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=31536000, must-revalidate"
+  </FilesMatch>
+
+  # Images — cache 30 days
+  <FilesMatch "\.(png|jpg|jpeg|gif|webp|ico|svg)$">
+    Header set Cache-Control "public, max-age=2592000, must-revalidate"
+  </FilesMatch>
+
+  # Video — cache 30 days
+  <FilesMatch "\.(mp4|webm|ogg)$">
+    Header set Cache-Control "public, max-age=2592000, must-revalidate"
+  </FilesMatch>
+
+  # Fonts — cache 1 year (never changes)
+  <FilesMatch "\.(woff|woff2|ttf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Web manifest — cache 1 day
+  <FilesMatch "\.webmanifest$">
+    Header set Cache-Control "public, max-age=86400, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# Enable ETags for precise cache invalidation
+FileETag MTime Size
+
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType text/html "access plus 0 seconds"
-  ExpiresByType text/css "access plus 7 days"
-  ExpiresByType application/javascript "access plus 7 days"
-  ExpiresByType image/png "access plus 30 days"
-  ExpiresByType image/jpeg "access plus 30 days"
-  ExpiresByType image/webp "access plus 30 days"
-  ExpiresByType video/mp4 "access plus 30 days"
+  ExpiresByType text/html                "access plus 0 seconds"
+  ExpiresByType text/css                 "access plus 1 year"
+  ExpiresByType application/javascript   "access plus 1 year"
+  ExpiresByType image/png                "access plus 30 days"
+  ExpiresByType image/jpeg               "access plus 30 days"
+  ExpiresByType image/webp               "access plus 30 days"
+  ExpiresByType image/gif                "access plus 30 days"
+  ExpiresByType image/svg+xml            "access plus 30 days"
+  ExpiresByType video/mp4                "access plus 30 days"
+  ExpiresByType video/webm               "access plus 30 days"
+  ExpiresByType font/woff2               "access plus 1 year"
   ExpiresByType application/manifest+json "access plus 1 day"
+</IfModule>
+
+# Enable gzip compression to reduce file sizes for faster loads
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript
+  AddOutputFilterByType DEFLATE application/json text/xml image/svg+xml
 </IfModule>

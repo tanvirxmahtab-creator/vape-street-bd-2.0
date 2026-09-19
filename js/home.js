@@ -63,7 +63,77 @@ async function renderCurrentOffers() {
 async function renderFeatured(){const target=document.querySelector("#featured-products");target.innerHTML="<div class=\"skeleton\"></div>".repeat(3);try{const products=await loadProducts();const catalog=products.length?products:DEMO_PRODUCTS;const selection=catalog.slice(0,6);target.innerHTML=selection.length?selection.map(card).join(""):'<div class="featured-empty"><p class="eyebrow">New stock soon</p><h3>The first edit is being prepared.</h3><p>Explore the categories or speak with the team for current availability.</p><a class="text-link" href="contact.html">Visit the branches <span aria-hidden="true">&#8594;</span></a></div>';setupTilt();}catch{const selection=DEMO_PRODUCTS.slice(0,6);target.innerHTML=selection.map(card).join("");setupTilt();}}
 function setupTilt(){if(window.IS_LOW_END_DEVICE || document.documentElement?.classList.contains("low-power-mode") || window.matchMedia("(pointer:coarse),(prefers-reduced-motion:reduce)").matches)return;document.querySelectorAll(".tilt-card, .offer-banner, .category-card, .home-signal").forEach(card=>{if(!card.querySelector(".card-3d-glare")){const glare=document.createElement("div");glare.className="card-3d-glare";card.appendChild(glare)}card.addEventListener("mousemove",event=>{const box=card.getBoundingClientRect(),posX=event.clientX-box.left,posY=event.clientY-box.top,normX=posX/box.width-.5,normY=posY/box.height-.5,rotX=-normY*10,rotY=normX*10;card.style.transform=`perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(10px) translateY(-5px)`;const glare=card.querySelector(".card-3d-glare");if(glare){glare.style.background=`radial-gradient(circle at ${(posX/box.width)*100}% ${(posY/box.height)*100}%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 65%)`}});card.addEventListener("mouseleave",()=>{card.style.transform="";const glare=card.querySelector(".card-3d-glare");if(glare)glare.style.background=""})})}
 function vapor(){const canvas=document.querySelector("#vapor-canvas");if(!canvas||window.IS_LOW_END_DEVICE||document.documentElement?.classList.contains("low-power-mode")||innerWidth<480||matchMedia("(prefers-reduced-motion:reduce)").matches)return;const ctx=canvas.getContext("2d");let dots=[];const resize=()=>{canvas.width=innerWidth*devicePixelRatio;canvas.height=canvas.offsetHeight*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);dots=Array.from({length:navigator.hardwareConcurrency<5?12:24},()=>({x:Math.random()*innerWidth,y:Math.random()*canvas.offsetHeight,r:Math.random()*3+1,s:Math.random()*.24+.08}))};const draw=()=>{if(window.IS_LOW_END_DEVICE||document.documentElement?.classList.contains("low-power-mode"))return;ctx.clearRect(0,0,innerWidth,canvas.offsetHeight);dots.forEach(dot=>{dot.y-=dot.s;dot.x+=Math.sin(dot.y*.01)*.15;if(dot.y<-10){dot.y=canvas.offsetHeight+10;dot.x=Math.random()*innerWidth}const gradient=ctx.createRadialGradient(dot.x,dot.y,0,dot.x,dot.y,dot.r*5);gradient.addColorStop(0,"rgba(0,230,195,.22)");gradient.addColorStop(1,"rgba(0,230,195,0)");ctx.fillStyle=gradient;ctx.beginPath();ctx.arc(dot.x,dot.y,dot.r*5,0,Math.PI*2);ctx.fill()});requestAnimationFrame(draw)};resize();addEventListener("resize",resize);draw()}
-function heroVideo(){const video=document.querySelector(".hero__video");if(!video)return;if(matchMedia("(prefers-reduced-motion:reduce)").matches){video.pause();video.removeAttribute("autoplay");return;}const play=()=>video.play().catch(()=>{});video.muted=true;if(video.readyState>=3)play();video.addEventListener("canplay",play,{once:true});}
+function heroVideo() {
+  const video = document.querySelector(".hero__video");
+  if (!video) return;
+
+  // Respect reduced-motion preference — show poster only
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    video.pause();
+    video.removeAttribute("autoplay");
+    video.classList.add("is-poster-only");
+    return;
+  }
+
+  // Skip on very low-end devices to save bandwidth
+  if (window.IS_LOW_END_DEVICE || document.documentElement?.classList.contains("low-power-mode")) {
+    video.pause();
+    video.classList.add("is-poster-only");
+    return;
+  }
+
+  // Ensure video is muted (required for autoplay in all browsers)
+  video.muted = true;
+  video.volume = 0;
+
+  let hasPlayed = false;
+
+  function attemptPlay() {
+    if (hasPlayed) return;
+    const p = video.play();
+    if (p && typeof p.then === "function") {
+      p.then(() => {
+        hasPlayed = true;
+        video.classList.add("is-playing");
+      }).catch(err => {
+        // NotAllowedError = browser blocked autoplay (common on mobile)
+        // NotSupportedError = codec not supported
+        // In both cases, show the poster image gracefully
+        if (!hasPlayed) {
+          video.classList.add("is-poster-only");
+        }
+      });
+    } else {
+      // Older browsers: no promise, assume it worked
+      hasPlayed = true;
+      video.classList.add("is-playing");
+    }
+  }
+
+  // Try immediately if already buffered
+  if (video.readyState >= 3) {
+    attemptPlay();
+  }
+
+  // Fallback: attempt on canplay event
+  video.addEventListener("canplay", attemptPlay, { once: true });
+
+  // Handle network/source errors gracefully — show poster
+  video.addEventListener("error", () => {
+    if (!hasPlayed) video.classList.add("is-poster-only");
+  }, { once: true });
+
+  // If tab was hidden during load (e.g. user opened in background tab),
+  // retry playback when they switch back to the tab
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !hasPlayed) attemptPlay();
+  });
+
+  // Timeout fallback: if video hasn't played in 4s, show poster
+  setTimeout(() => {
+    if (!hasPlayed) video.classList.add("is-poster-only");
+  }, 4000);
+}
 function testimonials(){let index=0;const target=document.querySelector("#testimonial-stage");if(!target)return;const paint=()=>{const item=TESTIMONIALS[index];target.innerHTML=`<p>“${item.quote}”</p><footer>${item.name}</footer>`;index=(index+1)%TESTIMONIALS.length};paint();if(!matchMedia("(prefers-reduced-motion:reduce)").matches&&!window.IS_LOW_END_DEVICE)setInterval(paint,6000)}
 function hero3DParallax(){const hero=document.querySelector(".hero"),content=document.querySelector(".hero__content");if(!hero||!content||window.IS_LOW_END_DEVICE||document.documentElement?.classList.contains("low-power-mode")||matchMedia("(pointer:coarse),(prefers-reduced-motion:reduce)").matches)return;hero.style.perspective="1200px";content.style.transition="transform 0.25s cubic-bezier(0.165, 0.84, 0.44, 1)";hero.addEventListener("mousemove",event=>{const box=hero.getBoundingClientRect(),x=(event.clientX-box.left)/box.width-.5,y=(event.clientY-box.top)/box.height-.5;content.style.transform=`rotateX(${-y*5}deg) rotateY(${x*5}deg) translateZ(15px)`});hero.addEventListener("mouseleave",()=>{content.style.transform=""})}
 

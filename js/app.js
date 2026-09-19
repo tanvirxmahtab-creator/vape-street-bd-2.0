@@ -2,15 +2,48 @@ import { AGE_GATE_COPY, OFFER_CAMPAIGN_COPY, SITE_CONFIG, DEMO_PRODUCTS, DEFAULT
 import { isFirebaseConfigured, db, collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp } from "./firebase-init.js";
 
 export async function loadProducts() {
-  if (!isFirebaseConfigured) return DEMO_PRODUCTS;
-  const snapshot = await getDocs(collection(db, "products"));
-  const products = snapshot.docs.map(item => ({id:item.id,...item.data()}));
-  return products.length ? products : DEMO_PRODUCTS;
+  const localRaw = localStorage.getItem("vsbd_products");
+  let localProducts = null;
+  try {
+    if (localRaw) localProducts = JSON.parse(localRaw);
+  } catch (e) { localProducts = null; }
+
+  if (!isFirebaseConfigured) {
+    return (localProducts && Array.isArray(localProducts) && localProducts.length) ? localProducts : DEMO_PRODUCTS;
+  }
+
+  try {
+    const snapshot = await getDocs(collection(db, "products"));
+    if (!snapshot.empty) {
+      const products = snapshot.docs.map(item => ({id:item.id,...item.data()}));
+      localStorage.setItem("vsbd_products", JSON.stringify(products));
+      return products;
+    }
+    return (localProducts && Array.isArray(localProducts) && localProducts.length) ? localProducts : DEMO_PRODUCTS;
+  } catch (err) {
+    console.warn("Could not load products from Firestore, falling back to local storage:", err);
+    return (localProducts && Array.isArray(localProducts) && localProducts.length) ? localProducts : DEMO_PRODUCTS;
+  }
 }
 export async function loadProduct(id) {
-  if (!isFirebaseConfigured) return DEMO_PRODUCTS.find(product => product.id === id) || null;
-  const snapshot = await getDoc(doc(db, "products", id));
-  return snapshot.exists() ? {id:snapshot.id,...snapshot.data()} : DEMO_PRODUCTS.find(product => product.id === id) || null;
+  const localRaw = localStorage.getItem("vsbd_products");
+  let localProducts = DEMO_PRODUCTS;
+  try {
+    if (localRaw) {
+      const parsed = JSON.parse(localRaw);
+      if (Array.isArray(parsed) && parsed.length) localProducts = parsed;
+    }
+  } catch (e) {}
+
+  if (!isFirebaseConfigured) return localProducts.find(product => product.id === id) || null;
+
+  try {
+    const snapshot = await getDoc(doc(db, "products", id));
+    return snapshot.exists() ? {id:snapshot.id,...snapshot.data()} : (localProducts.find(product => product.id === id) || null);
+  } catch (err) {
+    console.warn("Could not load product from Firestore, falling back to local storage:", err);
+    return localProducts.find(product => product.id === id) || null;
+  }
 }
 
 export async function loadOffers() {

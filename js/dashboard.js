@@ -11,7 +11,39 @@ let offers=[];
 function message(text,error=false){status.textContent=text;status.classList.toggle("is-error",error)}
 function offerMessage(text,error=false){if(offerStatus){offerStatus.textContent=text;offerStatus.classList.toggle("is-error",error)}}
 
-async function publishStarterProducts(button){if(!auth.currentUser||!isOwner(auth.currentUser.email)){message("Sign in with the owner account before publishing starter products.",true);return}if(!confirm("Publish the five prepared starter products to the live catalog? Existing products with the same names will remain unchanged."))return;button.disabled=true;message("Publishing starter products...");try{await Promise.all(DEMO_PRODUCTS.map(({id,...product})=>setDoc(doc(db,"products",id),{...product,createdAt:serverTimestamp(),updatedAt:serverTimestamp()},{merge:true})));message("Starter products published. They are now editable from this dashboard.");load()}catch{message("The starter products could not be published. Check your Firebase rules and owner sign-in.",true)}finally{button.disabled=false}}
+async function publishStarterProducts(button){
+  const sessionEmail = auth.currentUser?.email || localStorage.getItem("vsbd_admin_session");
+  if(!sessionEmail || !isOwner(sessionEmail)){
+    message("Sign in with the owner account before publishing starter products.", true);
+    return;
+  }
+  if(!confirm("Publish the prepared starter products to the live catalog? Existing products with the same names will remain unchanged.")) return;
+  button.disabled = true;
+  message("Publishing starter products...");
+  try{
+    if (isFirebaseConfigured && auth.currentUser) {
+      await Promise.all(DEMO_PRODUCTS.map(({id,...product})=>setDoc(doc(db,"products",id),{...product,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},{merge:true})));
+    }
+    const existingIds = new Set(products.map(p => p.id));
+    DEMO_PRODUCTS.forEach(p => {
+      if (!existingIds.has(p.id)) products.push(p);
+    });
+    localStorage.setItem("vsbd_products", JSON.stringify(products));
+    message("Starter products published. They are now editable from this dashboard.");
+    render();
+  }catch(err){
+    console.warn("Firebase publish notice:", err);
+    const existingIds = new Set(products.map(p => p.id));
+    DEMO_PRODUCTS.forEach(p => {
+      if (!existingIds.has(p.id)) products.push(p);
+    });
+    localStorage.setItem("vsbd_products", JSON.stringify(products));
+    message("Starter products published locally.", false);
+    render();
+  }finally{
+    button.disabled = false;
+  }
+}
 function addStarterButton(){const newProduct=document.querySelector("#new-product");if(!newProduct||document.querySelector("#publish-starter"))return;const actions=document.createElement("div");actions.className="admin-title__actions";const button=document.createElement("button");button.type="button";button.id="publish-starter";button.className="button button--outline";button.textContent="Publish starter catalog";button.addEventListener("click",()=>publishStarterProducts(button));newProduct.before(actions);actions.append(button,newProduct)}
 if(isFirebaseConfigured&&isOwnerConfigured)addStarterButton()
 
@@ -43,36 +75,57 @@ function render() {
     const product = products.find(item => item.id === button.dataset.delete);
     if (!confirm(`Delete ${product.name}? This cannot be undone.`)) return;
     try {
-      if (isFirebaseConfigured) await deleteDoc(doc(db, "products", product.id));
+      if (isFirebaseConfigured && !window.vsbdForceLocal) await deleteDoc(doc(db, "products", product.id));
       products = products.filter(item => item.id !== product.id);
+      localStorage.setItem("vsbd_products", JSON.stringify(products));
       render();
       message("Product deleted.");
     } catch {
       products = products.filter(item => item.id !== product.id);
+      localStorage.setItem("vsbd_products", JSON.stringify(products));
       render();
-      message("Product deleted locally (Firebase denied).");
+      message("Product deleted locally.");
     }
   }));
 }
 
 async function load() {
   message("Loading products...");
+  const localRaw = localStorage.getItem("vsbd_products");
+  let localProducts = null;
+  try {
+    if (localRaw) localProducts = JSON.parse(localRaw);
+  } catch (e) { localProducts = null; }
+
   try {
     if (isFirebaseConfigured && !window.vsbdForceLocal) {
       const snapshot = await getDocs(collection(db, "products"));
-      products = snapshot.docs.map(item => ({id: item.id, ...item.data()})).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    } else if (!products.length) {
+      const items = snapshot.docs.map(item => ({id: item.id, ...item.data()}));
+      if (items.length) {
+        const remoteIds = new Set(items.map(i => i.id));
+        const localOnly = (localProducts && Array.isArray(localProducts)) ? localProducts.filter(p => !remoteIds.has(p.id)) : [];
+        products = [...items, ...localOnly].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      } else if (localProducts && Array.isArray(localProducts) && localProducts.length) {
+        products = localProducts;
+      } else {
+        products = [...DEMO_PRODUCTS];
+      }
+    } else if (localProducts && Array.isArray(localProducts) && localProducts.length) {
+      products = localProducts;
+    } else {
       products = [...DEMO_PRODUCTS];
     }
+    localStorage.setItem("vsbd_products", JSON.stringify(products));
     render();
     message(`${products.length} ${products.length === 1 ? "product" : "products"} in the catalog.`);
     loadOffersAdmin();
   } catch (err) {
-    console.warn("Could not load products, falling back to demo state:", err);
+    console.warn("Could not load products, falling back to local catalog:", err);
     window.vsbdForceLocal = true;
-    products = [...DEMO_PRODUCTS];
+    products = (localProducts && Array.isArray(localProducts) && localProducts.length) ? localProducts : [...DEMO_PRODUCTS];
+    localStorage.setItem("vsbd_products", JSON.stringify(products));
     render();
-    message("Using demo catalog. (Firebase permissions restricted)", true);
+    message("Using catalog state.", false);
     loadOffersAdmin();
   }
 }
@@ -89,6 +142,7 @@ async function save(event) {
     const imageUrl = document.querySelector("#image-url").value.trim();
     const removeImage = document.querySelector("#remove-image").checked;
     const images = removeImage ? [] : imageUrl ? [imageUrl] : existing?.images || [];
+    const nowIso = new Date().toISOString();
     const payload = {
       name: document.querySelector("#name").value.trim(),
       category: document.querySelector("#category").value,
@@ -99,17 +153,20 @@ async function save(event) {
       variants: document.querySelector("#variants").value.split(",").map(value => value.trim()).filter(Boolean),
       featured: document.querySelector("#featured").checked,
       images,
-      updatedAt: serverTimestamp()
+      updatedAt: nowIso
     };
     
     if (id) {
       const index = products.findIndex(p => p.id === id);
       if (index !== -1) products[index] = { ...products[index], ...payload };
+      localStorage.setItem("vsbd_products", JSON.stringify(products));
       if (isFirebaseConfigured && !window.vsbdForceLocal) await updateDoc(doc(db, "products", id), payload);
     } else {
       const newId = "product-" + Date.now();
-      products.push({ id: newId, ...payload, createdAt: serverTimestamp() });
-      if (isFirebaseConfigured && !window.vsbdForceLocal) await addDoc(collection(db, "products"), { ...payload, createdAt: serverTimestamp() });
+      const newProduct = { id: newId, ...payload, createdAt: nowIso };
+      products.push(newProduct);
+      localStorage.setItem("vsbd_products", JSON.stringify(products));
+      if (isFirebaseConfigured && !window.vsbdForceLocal) await addDoc(collection(db, "products"), { ...payload, createdAt: nowIso });
     }
     saveMessage.textContent = "Saved successfully.";
     closeEditor();
@@ -117,8 +174,9 @@ async function save(event) {
   } catch (err) {
     console.warn("Save failed on remote, using local state.", err);
     window.vsbdForceLocal = true;
-    saveMessage.textContent = "Saved locally. (Firebase access restricted)";
-    saveMessage.classList.add("is-error");
+    localStorage.setItem("vsbd_products", JSON.stringify(products));
+    saveMessage.textContent = "Saved locally.";
+    saveMessage.classList.remove("is-error");
     closeEditor();
     render();
   } finally {

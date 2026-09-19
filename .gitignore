@@ -17,3 +17,8 @@ desktop.ini
 # Editor folders
 .vscode/
 .idea/
+
+# Node (only used for local dev server, not deployed)
+node_modules/
+package.json
+package-lock.json
