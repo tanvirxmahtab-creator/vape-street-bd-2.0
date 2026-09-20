@@ -57,6 +57,12 @@ ErrorDocument 404 /404.html
     Header set Expires "0"
     Header set X-LiteSpeed-Cache-Control "no-cache, no-store, max-age=0"
     Header set X-LiteSpeed-Tag "no-cache"
+    # Nuclear cache clear for all users: whenever version.json is fetched, wipe the browser's disk cache
+    Header always set Clear-Site-Data "\"cache\"" env=MATCH_VERSION
+  </FilesMatch>
+  
+  <FilesMatch "^version\.json$">
+    SetEnv MATCH_VERSION 1
   </FilesMatch>
 
   # Static assets — cache 1 day (moderate cache, non-hashed)

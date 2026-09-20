@@ -47,7 +47,7 @@
   <script>
   // Inline cache-buster: cannot be cached because HTML is no-cache.
   // Forces hard reload when site version changes.
-  (function(){try{var v='20260921_v3';var s=localStorage.getItem('site_version');if(s&&s!==v&&!sessionStorage.getItem('_vr')){localStorage.setItem('site_version',v);sessionStorage.setItem('_vr','1');if('caches'in window)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});location.reload(true);}}catch(e){}})();
+  (function(){try{var v='20260921_v4';var s=localStorage.getItem('site_version');if(s&&s!==v&&!sessionStorage.getItem('_vr')){localStorage.setItem('site_version',v);sessionStorage.setItem('_vr','1');if('caches'in window)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})});location.replace(location.pathname+'?_cb='+new Date().getTime());}}catch(e){}})();
   </script>
   <script src="js/version-check.js?v=20260921"></script>
 </head>

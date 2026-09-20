@@ -49,12 +49,9 @@
       const reloadKey = 'vsbd_hard_reload';
       if (!sessionStorage.getItem(reloadKey)) {
         sessionStorage.setItem(reloadKey, '1');
-        // location.reload(true) is deprecated but still forces a hard reload
-        // in most browsers. As a fallback, we also append a cache-bust param.
-        if (typeof location.reload === 'function') {
-          location.reload(true);
-          return;
-        }
+        // location.replace with a timestamp completely bypasses disk cache for the HTML document
+        window.location.replace(window.location.pathname + '?_cb=' + new Date().getTime());
+        return;
       }
       // Cleanup after the hard reload has happened
       sessionStorage.removeItem(reloadKey);
