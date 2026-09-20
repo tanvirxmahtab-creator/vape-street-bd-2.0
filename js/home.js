@@ -1,5 +1,5 @@
-import { DEMO_PRODUCTS, TESTIMONIALS, SITE_CONFIG, formatPrice, orderLink } from "./config.js?v=20260920";
-import { loadProducts, loadOffers, productVisual, escapeHtml, optimizeImageUrl } from "./app.js?v=20260920";
+import { DEMO_PRODUCTS, TESTIMONIALS, SITE_CONFIG, formatPrice, orderLink } from "./config.js?v=20260921";
+import { loadProducts, loadOffers, productVisual, escapeHtml, optimizeImageUrl } from "./app.js?v=20260921";
 function card(product) { const spec=product.shortSpec || product.variants?.[0] || "Selected edition"; return `<article class="product-card tilt-card"><a class="product-card__visual" href="product.html?id=${encodeURIComponent(product.id)}">${productVisual(product)}</a><div class="product-card__body"><div class="product-card__topline"><span>${escapeHtml(product.category)}</span><span class="stock--${product.stock === "Low Stock" ? "low" : product.stock === "Out of Stock" ? "out" : ""}">${escapeHtml(product.stock || "In Stock")}</span></div><h3>${escapeHtml(product.name)}</h3><p class="product-card__spec">${escapeHtml(spec)}</p><div class="product-card__bottom"><span class="price">${formatPrice(product.price)}</span><div class="card-actions"><a href="product.html?id=${encodeURIComponent(product.id)}">View</a><a href="${orderLink(product.name)}" target="_blank" rel="noopener">Order</a></div></div></div></article>`; }
 
 async function renderCurrentOffers() {
@@ -82,10 +82,10 @@ function heroVideo() {
     return;
   }
 
-  // Ensure video is muted (required for autoplay in all browsers)
+  // Ensure video is muted and set to loop (required for background hero video)
   video.muted = true;
   video.volume = 0;
-  video.loop = false;
+  video.loop = true;
 
   let hasPlayed = false;
 
@@ -95,45 +95,47 @@ function heroVideo() {
     if (p && typeof p.then === "function") {
       p.then(() => {
         hasPlayed = true;
+        video.classList.remove("is-poster-only");
         video.classList.add("is-playing");
       }).catch(err => {
-        // NotAllowedError = browser blocked autoplay (common on mobile)
-        // NotSupportedError = codec not supported
-        // In both cases, show the poster image gracefully
         if (!hasPlayed) {
           video.classList.add("is-poster-only");
         }
       });
     } else {
-      // Older browsers: no promise, assume it worked
       hasPlayed = true;
+      video.classList.remove("is-poster-only");
       video.classList.add("is-playing");
     }
   }
 
   // Try immediately if already buffered
-  if (video.readyState >= 3) {
+  if (video.readyState >= 2) {
     attemptPlay();
   }
 
-  // Fallback: attempt on canplay event
-  video.addEventListener("canplay", attemptPlay, { once: true });
+  video.addEventListener("canplay", attemptPlay);
+  video.addEventListener("loadeddata", attemptPlay);
+  video.addEventListener("playing", () => {
+    hasPlayed = true;
+    video.classList.remove("is-poster-only");
+    video.classList.add("is-playing");
+  });
 
-  // Handle network/source errors gracefully — show poster
   video.addEventListener("error", () => {
     if (!hasPlayed) video.classList.add("is-poster-only");
-  }, { once: true });
+  });
 
-  // If tab was hidden during load (e.g. user opened in background tab),
-  // retry playback when they switch back to the tab
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && !hasPlayed) attemptPlay();
   });
 
-  // Timeout fallback: if video hasn't played in 4s, show poster
+  // Timeout fallback: give slow network connections 12s to buffer before considering poster fallback
   setTimeout(() => {
-    if (!hasPlayed) video.classList.add("is-poster-only");
-  }, 4000);
+    if (!hasPlayed && video.paused) {
+      video.classList.add("is-poster-only");
+    }
+  }, 12000);
 }
 function testimonials(){let index=0;const target=document.querySelector("#testimonial-stage");if(!target)return;const paint=()=>{const item=TESTIMONIALS[index];target.innerHTML=`<p>“${item.quote}”</p><footer>${item.name}</footer>`;index=(index+1)%TESTIMONIALS.length};paint();if(!matchMedia("(prefers-reduced-motion:reduce)").matches&&!window.IS_LOW_END_DEVICE)setInterval(paint,6000)}
 function hero3DParallax(){const hero=document.querySelector(".hero"),content=document.querySelector(".hero__content");if(!hero||!content||window.IS_LOW_END_DEVICE||document.documentElement?.classList.contains("low-power-mode")||matchMedia("(pointer:coarse),(prefers-reduced-motion:reduce)").matches)return;hero.style.perspective="1200px";content.style.transition="transform 0.25s cubic-bezier(0.165, 0.84, 0.44, 1)";hero.addEventListener("mousemove",event=>{const box=hero.getBoundingClientRect(),x=(event.clientX-box.left)/box.width-.5,y=(event.clientY-box.top)/box.height-.5;content.style.transform=`rotateX(${-y*5}deg) rotateY(${x*5}deg) translateZ(15px)`});hero.addEventListener("mouseleave",()=>{content.style.transform=""})}

@@ -1,4 +1,4 @@
-import { AGE_GATE_COPY, OFFER_CAMPAIGN_COPY, SITE_CONFIG, DEMO_PRODUCTS, DEFAULT_OFFERS } from "./config.js?v=20260920";
+import { AGE_GATE_COPY, OFFER_CAMPAIGN_COPY, SITE_CONFIG, DEMO_PRODUCTS, DEFAULT_OFFERS } from "./config.js?v=20260921";
 import { isFirebaseConfigured, db, collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp } from "./firebase-init.js";
 
 export async function loadProducts() {

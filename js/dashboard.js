@@ -1,6 +1,6 @@
-import { CATEGORIES, DEMO_PRODUCTS, DEFAULT_OFFERS, formatPrice, isOwnerConfigured, isOwner } from "./config.js?v=20260920";
+import { CATEGORIES, DEMO_PRODUCTS, DEFAULT_OFFERS, formatPrice, isOwnerConfigured, isOwner } from "./config.js?v=20260921";
 import { isFirebaseConfigured, auth, db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, onAuthStateChanged, signOut } from "./firebase-init.js";
-import { escapeHtml, loadOffers } from "./app.js?v=20260920";
+import { escapeHtml, loadOffers } from "./app.js?v=20260921";
 
 const list=document.querySelector("#product-list"),status=document.querySelector("#admin-status"),editor=document.querySelector("#product-editor"),form=document.querySelector("#product-form"),saveMessage=document.querySelector("#save-message");
 let products=[];

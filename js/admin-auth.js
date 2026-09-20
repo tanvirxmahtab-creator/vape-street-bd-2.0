@@ -1,5 +1,5 @@
 import { isFirebaseConfigured, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "./firebase-init.js";
-import { isOwnerConfigured, isOwner, SITE_CONFIG } from "./config.js?v=20260920";
+import { isOwnerConfigured, isOwner, SITE_CONFIG } from "./config.js?v=20260921";
 
 const form = document.querySelector("#login-form");
 const message = document.querySelector("#login-message");
