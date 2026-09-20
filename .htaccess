@@ -44,14 +44,19 @@ ErrorDocument 404 /404.html
 #   Result: All users instantly get the new version. Zero stale cache.
 # =====================================================================
 
+# Disable LiteSpeed full-page server-side caching for HTML & version.json
+<IfModule LiteSpeed>
+  CacheLookup off
+</IfModule>
+
 <IfModule mod_headers.c>
   # HTML and version.json — never cache, always revalidate
   <FilesMatch "\.(html|htm)$|^version\.json$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Cache-Control "no-cache, no-store, must-revalidate, private, max-age=0"
     Header set Pragma "no-cache"
     Header set Expires "0"
-    # Exclude from Hostinger's LiteSpeed server-side cache
-    Header set X-LiteSpeed-Cache-Control "no-cache"
+    Header set X-LiteSpeed-Cache-Control "no-cache, no-store, max-age=0"
+    Header set X-LiteSpeed-Tag "no-cache"
   </FilesMatch>
 
   # Static assets — cache 1 day (moderate cache, non-hashed)
