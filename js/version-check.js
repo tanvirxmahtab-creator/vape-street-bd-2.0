@@ -1,6 +1,6 @@
 // version-check.js
-// Forcefully unregisters legacy service workers, clears browser CacheStorage,
-// and guarantees old users receive fresh site updates on deploy.
+// Nuclear cache-buster for returning users.
+// Forces a true hard reload (bypasses disk cache) when the site version changes.
 
 (async function checkVersion() {
   // 1. Unregister any legacy Service Workers from previous deploys
@@ -33,11 +33,11 @@
 
     const storedVersion = localStorage.getItem('site_version');
 
-    // If version changed OR if storedVersion is not set yet for returning user
+    // If version changed OR first-time visitor seeing version-check
     if (storedVersion !== currentVersion) {
       localStorage.setItem('site_version', currentVersion);
 
-      // Clear any stored CacheStorage
+      // Clear CacheStorage (used by service workers / PWA)
       if ('caches' in window) {
         try {
           const keys = await caches.keys();
@@ -45,13 +45,19 @@
         } catch (e) {}
       }
 
-      // If this is a returning user updating from an old version (or first time seeing version-check)
-      // Force reload with cache-busting query parameter
-      const currentUrl = new URL(window.location.href);
-      if (currentUrl.searchParams.get('_v') !== currentVersion) {
-        currentUrl.searchParams.set('_v', currentVersion);
-        window.location.replace(currentUrl.toString());
+      // Mark that we need to hard-reload (sessionStorage survives reload)
+      const reloadKey = 'vsbd_hard_reload';
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, '1');
+        // location.reload(true) is deprecated but still forces a hard reload
+        // in most browsers. As a fallback, we also append a cache-bust param.
+        if (typeof location.reload === 'function') {
+          location.reload(true);
+          return;
+        }
       }
+      // Cleanup after the hard reload has happened
+      sessionStorage.removeItem(reloadKey);
     }
   } catch (error) {
     console.error('Failed to check site version:', error);
